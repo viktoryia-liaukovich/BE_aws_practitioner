@@ -1,20 +1,57 @@
-import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { products } from "./mocks/products";
+import type { APIGatewayProxyEvent } from "aws-lambda";
+import {
+  DynamoDBClient,
+  GetItemCommand
+} from '@aws-sdk/client-dynamodb'
+import { DynamoDBDocumentClient, GetCommand, ScanCommand } from '@aws-sdk/lib-dynamodb'
 
-export async function main(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+const dynamoDB = new DynamoDBClient({ region: process.env.AWS_REGION });
+const documentClient = DynamoDBDocumentClient.from(dynamoDB)
+const productsTable = process.env.PRODUCTS_TABLE as string;
+const stockTable = process.env.STOCK_TABLE as string;
+
+export async function main(event: APIGatewayProxyEvent) {
   const id = event.pathParameters?.id;
 
-  const product = products.find((p) => p.id === id);
-
-  if (!product) {
+  if (!id) {
     return {
-      statusCode: 404,
+      statusCode: 400,
+      body: JSON.stringify({ message: "Missing product id" }),
+    }
+  }
+
+  const product = await documentClient.send(
+      new GetCommand({
+        TableName: productsTable,
+        Key: {
+          id: id
+        }
+      })
+    )
+
+    const stock = await documentClient.send(
+      new GetCommand({
+        TableName: stockTable,
+        Key: {
+          product_id: id
+        }
+      })
+    )
+
+  if (!product.Item || !stock.Item) {
+    return {
+      statusCode: 400,
       body: JSON.stringify({ message: "Product not found" }),
     };
   }
 
+  const productWithStock = {
+    ...product.Item,
+    count: stock.Item ? stock.Item.count : 0,
+  }
+
   return {
     statusCode: 200,
-    body: JSON.stringify(product),
-  };
+    body: JSON.stringify(productWithStock),
+  }
 }
