@@ -1,9 +1,8 @@
 import type { APIGatewayProxyEvent } from "aws-lambda";
 import {
-  DynamoDBClient,
-  GetItemCommand
+  DynamoDBClient
 } from '@aws-sdk/client-dynamodb'
-import { DynamoDBDocumentClient, GetCommand, ScanCommand } from '@aws-sdk/lib-dynamodb'
+import { DynamoDBDocumentClient, GetCommand } from '@aws-sdk/lib-dynamodb'
 
 const dynamoDB = new DynamoDBClient({ region: process.env.AWS_REGION });
 const documentClient = DynamoDBDocumentClient.from(dynamoDB)

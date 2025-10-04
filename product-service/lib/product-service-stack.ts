@@ -38,8 +38,21 @@ export class ProductServiceStack extends cdk.Stack {
         STOCK_TABLE: STOCK_TABLE,
       },
     });
-    const getProductsList = new apigateway.LambdaIntegration(getProductsListLambda, {
-      integrationResponses: [ // Add mapping for successful response
+
+     const createProductLambda = new lambda.Function(this, 'create-product', {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      memorySize: 1024,
+      timeout: cdk.Duration.seconds(5),
+      handler: 'createProduct.main',
+      code: lambda.Code.fromAsset(path.join(__dirname, './')),
+      environment: {
+        PRODUCTS_TABLE: PRODUCTS_TABLE,
+        STOCK_TABLE: STOCK_TABLE,
+      },
+    });
+
+    const createProduct = new apigateway.LambdaIntegration(createProductLambda, {
+      integrationResponses: [
         {
           statusCode: '200',
         }
@@ -47,12 +60,25 @@ export class ProductServiceStack extends cdk.Stack {
       proxy: false,
     });
 
-    // Create a resource /hello and GET request under it
+    const getProductsList = new apigateway.LambdaIntegration(getProductsListLambda, {
+      integrationResponses: [
+        {
+          statusCode: '200',
+        }
+      ],
+      proxy: false,
+    });
+
     const productsResource = api.root.addResource("products");
-    // On this resource attach a GET method which pass reuest to our Lambda function
+
     productsResource.addMethod('GET', getProductsList, {
       methodResponses: [{ statusCode: '200' }]
     });
+
+    productsResource.addMethod('POST', createProduct, {
+      methodResponses: [{ statusCode: '200' }]
+    });
+
 
     const getProductByIdLambda = new lambda.Function(this, 'get-product-by-id', {
       runtime: lambda.Runtime.NODEJS_20_X,
@@ -66,13 +92,12 @@ export class ProductServiceStack extends cdk.Stack {
       },
     });
     const getProductById = new apigateway.LambdaIntegration(getProductByIdLambda, {
-      integrationResponses: [ // Add mapping for successful response
+      integrationResponses: [
         { statusCode: '200' },
         { statusCode: '404' },
       ],
     });
 
-    // Create a resource /hello and GET request under it
     const productByIdResource = productsResource.addResource("{id}");
     // On this resource attach a GET method which pass reuest to our Lambda function
     productByIdResource.addMethod('GET', getProductById, {
@@ -81,9 +106,9 @@ export class ProductServiceStack extends cdk.Stack {
 
     productTable.grantReadData(getProductsListLambda)
     productTable.grantReadData(getProductByIdLambda)
-    //productTable.grantWriteData(createProductLambda)
+    productTable.grantWriteData(createProductLambda)
     stockTable.grantReadData(getProductsListLambda)
     stockTable.grantReadData(getProductByIdLambda)
-    //stockTable.grantWriteData(createProductLambda)
+    stockTable.grantWriteData(createProductLambda)
   }
 }
