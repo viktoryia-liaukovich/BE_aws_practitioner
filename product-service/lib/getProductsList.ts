@@ -9,8 +9,11 @@ const productsTable = process.env.PRODUCTS_TABLE as string;
 const stockTable = process.env.STOCK_TABLE as string;
 
 export async function main() {
+  try {
 
-  const products = await documentClient.send(
+    console.log('Get products list request.');
+
+    const products = await documentClient.send(
     new ScanCommand({
       TableName: productsTable,
     })
@@ -41,7 +44,11 @@ export async function main() {
     }
   })
 
-
-
   return productsList;
+  } catch (error) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ message: error }),
+    }
+  }
 }
