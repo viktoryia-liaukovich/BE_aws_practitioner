@@ -57,7 +57,7 @@ export async function main(event: APIGatewayProxyEvent) {
   } catch (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: error }),
+      body: JSON.stringify({ message: 'Server error occured' }),
     };
   }
 }
