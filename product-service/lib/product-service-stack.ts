@@ -32,7 +32,7 @@ export class ProductServiceStack extends cdk.Stack {
       memorySize: 1024,
       timeout: cdk.Duration.seconds(5),
       handler: 'getProductsList.main',
-      code: lambda.Code.fromAsset(path.join(__dirname, './')),
+      code: lambda.Code.fromAsset(path.join(__dirname, './lambda/getProductsList')),
       environment: {
         PRODUCTS_TABLE: PRODUCTS_TABLE,
         STOCK_TABLE: STOCK_TABLE,
@@ -44,7 +44,7 @@ export class ProductServiceStack extends cdk.Stack {
       memorySize: 1024,
       timeout: cdk.Duration.seconds(5),
       handler: 'createProduct.main',
-      code: lambda.Code.fromAsset(path.join(__dirname, './')),
+      code: lambda.Code.fromAsset(path.join(__dirname, './lambda/createProduct')),
       environment: {
         PRODUCTS_TABLE: PRODUCTS_TABLE,
         STOCK_TABLE: STOCK_TABLE,
@@ -85,7 +85,7 @@ export class ProductServiceStack extends cdk.Stack {
       memorySize: 1024,
       timeout: cdk.Duration.seconds(5),
       handler: 'getProductById.main',
-      code: lambda.Code.fromAsset(path.join(__dirname, './')),
+      code: lambda.Code.fromAsset(path.join(__dirname, './lambda/getProductById')),
       environment: {
         PRODUCTS_TABLE: PRODUCTS_TABLE,
         STOCK_TABLE: STOCK_TABLE,
