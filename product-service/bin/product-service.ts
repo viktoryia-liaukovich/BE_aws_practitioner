@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib';
 import { ProductServiceStack } from '../lib/product-service-stack';
+import { ImportServiceStack } from '../lib/import-service-stack';
 
 const app = new cdk.App();
 new ProductServiceStack(app, 'ProductServiceStack', {
@@ -18,3 +19,5 @@ new ProductServiceStack(app, 'ProductServiceStack', {
 
   /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
 });
+
+new ImportServiceStack(app, 'ImportServiceStack');
