@@ -12,12 +12,35 @@ export class ImportServiceStack extends cdk.Stack {
     super(scope, id, props);
 
     const api = new apigateway.RestApi(this, "import-service-api", {
-          restApiName: "Import Service"
+          restApiName: "Import Service",
+          defaultCorsPreflightOptions: {
+            allowOrigins: apigateway.Cors.ALL_ORIGINS,
+            allowMethods: apigateway.Cors.ALL_METHODS,
+            allowHeaders: [
+              'Content-Type',
+              'X-Amz-Date',
+              'Authorization',
+              'X-Api-Key',
+              'X-Amz-Security-Token',
+            ],
+          },
         });
 
     const bucket = new s3.Bucket(this, "ImportServiceBucket", {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
+      cors: [
+        {
+          allowedOrigins: ['*'],
+          allowedMethods: [
+            s3.HttpMethods.GET,
+            s3.HttpMethods.PUT,
+            s3.HttpMethods.POST,
+          ],
+          allowedHeaders: ['*'],
+          exposedHeaders: ['ETag'],
+        },
+      ]
     });
 
     new s3deploy.BucketDeployment(this, "CreateUploadedFolder", {
@@ -42,20 +65,26 @@ export class ImportServiceStack extends cdk.Stack {
 
     const importProductsFileIntegration = new apigateway.LambdaIntegration(importProductsFileLambda, {
       integrationResponses: [
-        {
-          statusCode: '200',
-        }
+        { statusCode: '200' },
+        { statusCode: '400' },
       ],
-      proxy: false,
+      proxy: true,
     });
 
      const importResource = api.root.addResource("import");
 
-     importResource.addMethod('GET', importProductsFileIntegration);
+     importResource.addMethod('GET', importProductsFileIntegration, {
+      requestParameters: {
+        'method.request.querystring.fileName': true, // true = required
+      },
+      requestValidatorOptions: {
+        validateRequestParameters: true,
+      },
+     });
 
      const importFileParser = new lambda.Function(this, 'ImportFileParserLambda', {
       runtime: lambda.Runtime.NODEJS_18_X,
-      handler: 'importFileParser.handler',
+      handler: 'importFileParser.main',
       code: lambda.Code.fromAsset(
         path.join(__dirname, "./lambda/importFileParser")
       ),

@@ -1,25 +1,27 @@
 import { S3Handler } from 'aws-lambda';
-import AWS from 'aws-sdk';
+import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import csv from 'csv-parser';
+import { Readable } from 'stream';
 
-const s3 = new AWS.S3({ region: process.env.AWS_REGION });
+const s3Client = new S3Client({ region: process.env.AWS_REGION });
 
-export const handler: S3Handler = async (event) => {
-  console.log('Received S3 event:', JSON.stringify(event, null, 2));
+export const main: S3Handler = async (event) => {
+  console.log('Received S3 event with data:', JSON.stringify(event, null, 2));
 
-  for (const record of event.Records) {
+  for (const record of (event.Records || [])) {
     const bucketName = record.s3.bucket.name;
     const objectKey = decodeURIComponent(record.s3.object.key.replace(/\+/g, ' '));
 
     console.log(`Processing file from bucket: ${bucketName}, key: ${objectKey}`);
 
     try {
-      const s3Stream = s3
-        .getObject({
-          Bucket: bucketName,
-          Key: objectKey,
-        })
-        .createReadStream();
+      const command = new GetObjectCommand({
+        Bucket: bucketName,
+        Key: objectKey,
+      });
+
+      const response = await s3Client.send(command);
+      const s3Stream = response.Body as Readable;
 
       await new Promise<void>((resolve, reject) => {
         s3Stream
