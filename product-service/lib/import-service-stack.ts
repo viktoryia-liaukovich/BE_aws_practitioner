@@ -5,10 +5,15 @@ import * as s3deploy from "aws-cdk-lib/aws-s3-deployment";
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import * as s3n from 'aws-cdk-lib/aws-s3-notifications';
+import * as sqs from "aws-cdk-lib/aws-sqs";
 import path from "path";
 
+interface ImportServiceStackProps extends cdk.StackProps {
+  catalogItemsQueue: sqs.Queue;
+}
+
 export class ImportServiceStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props: ImportServiceStackProps) {
     super(scope, id, props);
 
     const api = new apigateway.RestApi(this, "import-service-api", {
@@ -61,7 +66,7 @@ export class ImportServiceStack extends cdk.Stack {
       },
     });
 
-     bucket.grantPut(importProductsFileLambda);
+    bucket.grantPut(importProductsFileLambda);
 
     const importProductsFileIntegration = new apigateway.LambdaIntegration(importProductsFileLambda, {
       integrationResponses: [
@@ -90,10 +95,12 @@ export class ImportServiceStack extends cdk.Stack {
       ),
       environment: {
         BUCKET_NAME: bucket.bucketName,
+         SQS_URL: props.catalogItemsQueue.queueUrl,
       },
     });
 
     bucket.grantRead(importFileParser);
+    props.catalogItemsQueue.grantSendMessages(importFileParser);
 
     // Configure the trigger for "uploaded/" folder
     bucket.addEventNotification(
@@ -102,6 +109,4 @@ export class ImportServiceStack extends cdk.Stack {
       { prefix: 'uploaded/' }
     );
   }
-
-
 }
