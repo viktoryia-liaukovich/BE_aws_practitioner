@@ -19,6 +19,17 @@ export class ProductServiceStack extends cdk.Stack {
     const api = new apigateway.RestApi(this, "product-service-api", {
       restApiName: "Product Service",
       description: "This API serves products.",
+      defaultCorsPreflightOptions: {
+        allowOrigins: apigateway.Cors.ALL_ORIGINS,
+        allowMethods: apigateway.Cors.ALL_METHODS,
+        allowHeaders: [
+          'Content-Type',
+          'X-Amz-Date',
+          'Authorization',
+          'X-Api-Key',
+          'X-Amz-Security-Token',
+        ],
+      },
     });
 
     const productTable = dynamodb.Table.fromTableName(
@@ -89,36 +100,22 @@ export class ProductServiceStack extends cdk.Stack {
     const createProduct = new apigateway.LambdaIntegration(
       createProductLambda,
       {
-        integrationResponses: [
-          {
-            statusCode: "200",
-          },
-        ],
-        proxy: false,
+        proxy: true,
       }
     );
 
     const getProductsList = new apigateway.LambdaIntegration(
       getProductsListLambda,
       {
-        integrationResponses: [
-          {
-            statusCode: "200",
-          },
-        ],
-        proxy: false,
+        proxy: true,
       }
     );
 
     const productsResource = api.root.addResource("products");
 
-    productsResource.addMethod("GET", getProductsList, {
-      methodResponses: [{ statusCode: "200" }],
-    });
+    productsResource.addMethod("GET", getProductsList);
 
-    productsResource.addMethod("POST", createProduct, {
-      methodResponses: [{ statusCode: "200" }],
-    });
+    productsResource.addMethod("POST", createProduct);
 
     const getProductByIdLambda = new lambda.Function(
       this,
@@ -140,15 +137,13 @@ export class ProductServiceStack extends cdk.Stack {
     const getProductById = new apigateway.LambdaIntegration(
       getProductByIdLambda,
       {
-        integrationResponses: [{ statusCode: "200" }, { statusCode: "404" }],
+        proxy: true,
       }
     );
 
     const productByIdResource = productsResource.addResource("{id}");
     // On this resource attach a GET method which pass reuest to our Lambda function
-    productByIdResource.addMethod("GET", getProductById, {
-      methodResponses: [{ statusCode: "200" }, { statusCode: "404" }],
-    });
+    productByIdResource.addMethod("GET", getProductById);
 
     this.catalogItemsQueue = new sqs.Queue(this, "catalog-items-queue", {
       queueName: "catalog-items-queue",
