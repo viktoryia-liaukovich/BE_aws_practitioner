@@ -1,3 +1,4 @@
+import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import {
   DynamoDBClient
 } from '@aws-sdk/client-dynamodb'
@@ -8,7 +9,7 @@ const documentClient = DynamoDBDocumentClient.from(dynamoDB)
 const productsTable = process.env.PRODUCTS_TABLE as string;
 const stockTable = process.env.STOCK_TABLE as string;
 
-export async function main() {
+export async function main(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
 
     console.log('Get products list request.');
@@ -31,6 +32,11 @@ export async function main() {
   ) {
     return {
       statusCode: 400,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+        'Access-Control-Allow-Methods': 'GET,OPTIONS',
+      },
       body: JSON.stringify({ message: 'No items found' }),
     }
   }
@@ -44,10 +50,23 @@ export async function main() {
     }
   })
 
-  return productsList;
+  return {
+    statusCode: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+      'Access-Control-Allow-Methods': 'GET,OPTIONS',
+    },
+    body: JSON.stringify(productsList),
+  };
   } catch (error) {
     return {
       statusCode: 500,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+        'Access-Control-Allow-Methods': 'GET,OPTIONS',
+      },
       body: JSON.stringify({ message: 'Server error occured' }),
     }
   }

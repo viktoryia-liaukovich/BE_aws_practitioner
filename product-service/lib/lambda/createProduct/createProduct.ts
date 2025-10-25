@@ -1,3 +1,4 @@
+import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import {
   DynamoDBClient
 } from '@aws-sdk/client-dynamodb'
@@ -29,8 +30,23 @@ function validateInput(product: unknown) {
   return null;
 }
 
-export async function main(product: any) {
+export async function main(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   const id = randomUUID();
+
+  let product;
+  try {
+    product = JSON.parse(event.body || '{}');
+  } catch (error) {
+    return {
+      statusCode: 400,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+        'Access-Control-Allow-Methods': 'POST,OPTIONS',
+      },
+      body: JSON.stringify({ message: 'Invalid JSON in request body' }),
+    };
+  }
 
   console.log("Create product request for: ", JSON.stringify(product, null, 2));
 
@@ -40,6 +56,11 @@ export async function main(product: any) {
     if (validationError) {
       return {
         statusCode: 400,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+          'Access-Control-Allow-Methods': 'POST,OPTIONS',
+        },
         body: JSON.stringify({ message: validationError }),
       }
     }
@@ -66,10 +87,23 @@ export async function main(product: any) {
       })
     )
 
-    return JSON.stringify({...createdProduct, ...createdStock});
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+        'Access-Control-Allow-Methods': 'POST,OPTIONS',
+      },
+      body: JSON.stringify({...createdProduct, ...createdStock}),
+    };
   } catch (error) {
     return {
       statusCode: 500,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+        'Access-Control-Allow-Methods': 'POST,OPTIONS',
+      },
       body: JSON.stringify({ message: 'Server error occured' }),
     }
   }
